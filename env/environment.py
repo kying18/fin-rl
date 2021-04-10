@@ -18,6 +18,7 @@ class TradeEnv(gym.Env):
 
         self.tickers = tickers
         self.data = pd.read_csv(data_path) #cols = [datetime, stock1, stock2, stock3, ...]
+
         self.episode_length = EPISODE_LENGTH #number of trading days in episode
         self.data_length = len(self.data) #number of total days in historical data todo change
         self.num_past_states = NUM_PAST_STATES #number of past days that are used in state
@@ -50,8 +51,10 @@ class TradeEnv(gym.Env):
         self.balance += np.dot(self.curr_prices, -np.multiply(sell_action, self.holdings))
         self.holdings += np.multiply(self.holdings, sell_action) # sell action is negative, so this is updating holdings after selling
         self.holdings += np.divide(self.balance*buy_action, self.curr_prices) # updating holdings to buy more
+        self.balance += -self.balance*np.sum(buy_action)
         
         self.net_worth = self.get_net_worth()
+
         
         rew = self.net_worth - self.last_net_worth # reward is the delta between last net worth and current net worth
         self.last_net_worth = self.net_worth # setting current net worth to equal last net worth now
@@ -60,9 +63,11 @@ class TradeEnv(gym.Env):
         self.steps += 1
         self.index += 1
 
-        stock_obs = self.get_stock_obs(index)
+        stock_obs = self.get_stock_obs(self.index)
+
         
-        obs = get_obs(stock_obs, self.balance, self.holdings)
+        obs = self.get_obs(stock_obs, self.balance, self.holdings)
+
         
         self.curr_prices = stock_obs[-1]
 
@@ -70,27 +75,30 @@ class TradeEnv(gym.Env):
         return obs, rew, done, {}
 
     def get_net_worth(self):
-        print (np.multiply(self.holdings, self.curr_prices))
-        return np.multiply(self.holdings, self.curr_prices) + self.balance
+
+        return np.dot(self.holdings, self.curr_prices) + self.balance
 
     def get_stock_obs(self, index):
-        return self.data[self.index - self.num_past_states:self.index][self.tickers].values.reshape(-1,) #stack data
+
+        
+        return self.data[self.index - self.num_past_states:self.index][self.tickers].values #stack data
 
     def get_obs(self, stock_obs, balance, holdings):
-        return np.concatenate([[self.balance], self.holdings, self.stock_obs])
+        return np.concatenate([stock_obs.reshape(-1,), [self.balance], self.holdings])
         
     def reset(self):
         self.index = 2
-        # self.index = np.random.randint(self.num_past_states, self.data_length - self.episode_length) #starting index
-        self.stock_obs = self.get_stock_obs(self.index)
+        #self.index = np.random.randint(self.num_past_states, self.data_length - self.episode_length) #starting index
+        stock_obs = self.get_stock_obs(self.index)
         self.holdings = np.zeros(len(self.tickers)) #holdings of each stock in number of shares
         self.balance = INITIAL_BALANCE
         self.last_net_worth = INITIAL_BALANCE
         self.steps = 0
+        
 
-        self.curr_prices = self.stock_obs[-1]
+        self.curr_prices = stock_obs[-1]
 
-        obs = self.get_obs(self.stock_obs, self.balance, self.holdings)
+        obs = self.get_obs(stock_obs, self.balance, self.holdings)
         return obs  # reward, done, info can't be included
 
 
