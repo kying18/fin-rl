@@ -70,6 +70,7 @@ class TradeEnv(gym.Env):
         return obs, rew, done, {}
 
     def get_net_worth(self):
+        print (np.multiply(self.holdings, self.curr_prices))
         return np.multiply(self.holdings, self.curr_prices) + self.balance
 
     def get_stock_obs(self, index):
