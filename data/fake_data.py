@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 import pandas_market_calendars as mcal
 
 TICKER_PREFIX = 'T'
@@ -21,12 +22,14 @@ def generate_data(ticker_list, start_date='2000-01-01', end_date='2010-01-01'):
 
     for ticker in ticker_list:
         a = np.random.uniform(1, 1000)
-        b = np.random.uniform(0.05, a/20)
+        b = np.random.uniform(0.05, 1)
         c = np.random.uniform(0.05, .25)
-        d = np.random.uniform(0.1, (a-b)/10)
-        e = np.random.uniform(0.001, 0.05)
+        d = np.random.uniform(0.1, (a-b)/20)
+        e = np.random.uniform(-0.02, 0.05)
+        f = np.random.uniform(5, 15)
+        g = np.random.uniform(0.005, 0.01)
         
-        df[ticker] = np.maximum(a + b*np.sin(c*df['index']) + np.random.normal(loc=0, scale=d, size=len(df['index'])) + e * df['index'], 0.01)
+        df[ticker] = np.maximum(a + b*np.sin(c*df['index']) + np.random.normal(loc=0, scale=d, size=len(df['index'])) + e * df['index'] + f * np.sin(g*df['index']), 0.01)
 
     df = df[df.columns[1:]] # get rid of index col
 
@@ -45,3 +48,6 @@ if __name__ == '__main__':
     # print(data)
 
     save_data(data, 'fake_data.csv')
+
+    data.plot(use_index=True, y=data.columns[1:10])
+    plt.show()
