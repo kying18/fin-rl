@@ -23,13 +23,15 @@ def generate_data(ticker_list, start_date='2000-01-01', end_date='2010-01-01'):
     for ticker in ticker_list:
         a = np.random.uniform(1, 1000)
         b = np.random.uniform(0.05, 1)
-        c = np.random.uniform(0.05, .25)
+        c = np.random.uniform(0.1, .4)
         d = np.random.uniform(0.1, (a-b)/20)
-        e = np.random.uniform(-0.02, 0.05)
-        f = np.random.uniform(5, 15)
-        g = np.random.uniform(0.005, 0.01)
+        e = np.random.uniform(-0.03, 0.08)
+        f = np.random.uniform(10, 25)
+        g = np.random.uniform(0.003, 0.008)
+        shift1 = np.random.uniform(0, 2*math.pi)
+        shift2 = np.random.uniform(0, 2*math.pi)
         
-        df[ticker] = np.maximum(a + b*np.sin(c*df['index']) + np.random.normal(loc=0, scale=d, size=len(df['index'])) + e * df['index'] + f * np.sin(g*df['index']), 0.01)
+        df[ticker] = np.maximum(a + b*np.sin(c*df['index']+shift1) + np.random.normal(loc=0, scale=d, size=len(df['index'])) + e * df['index'] + f * np.sin(g*df['index']+shift2), 0.01)
 
     df = df[df.columns[1:]] # get rid of index col
 
@@ -44,7 +46,7 @@ if __name__ == '__main__':
     ticker_list = get_tickers(50)
     # print(ticker_list)
 
-    data = generate_data(ticker_list, start_date='2000-01-01', end_date='2010-01-01')
+    data = generate_data(ticker_list, start_date='2000-01-01', end_date='2005-01-01')
     # print(data)
 
     save_data(data, 'fake_data.csv')
