@@ -4,14 +4,7 @@ import pandas as pd
 import config
 from data import get_data
 from env.environment import TradeEnv
-
-# api = tradeapi.REST(
-#     base_url=config.BASE_URL,
-#     key_id=config.KEY_ID,
-#     secret_key=config.SECRET_KEY
-# )
-
-# session = requests.session()
+from trade_platform import TradePlatform
 
 def get_tickers(ticker_file):
     return pd.read_csv(ticker_file)['Tickers']
@@ -30,11 +23,13 @@ def get_action(tickers):
 
     return softmax(action) # returns the actions that we should be taking
 
-# def trade(tickers, action):
-#     api.submit_order(
-#     symbol='SPY',
-#     notional=450,  # notional value of 1.5 shares of SPY at $300
-#     side='buy',
-#     type='market',
-#     time_in_force='day',
-# )
+def main():
+    p = TradePlatform()
+    tickers = get_tickers(config.TICKER_FILE)
+    action = get_action(tickers)
+
+    p.cancel_existing_orders() # should not really do anything, we shouldnt have any outstanding orders
+    p.execute_action(action, tickers)
+
+if __name__ == '__main__':
+    main()
