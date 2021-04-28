@@ -11,9 +11,12 @@ class TradePlatform():
             secret_key=config.SECRET_KEY
         )
         self.account = self.alpaca.get_account()
-        self.portfolio_value = float(self.account.portfolio_value)
+
+        # I multiply by a constant (<1) to underestimate how much $ we have
+        # since this will likely change very slightly between this calculation and when 
+        # we try to calculate the notionals and execute the actions
+        self.portfolio_value = float(self.account.portfolio_value) * (1-config.SLIPPAGE)
         self.portfolio = self.alpaca.list_positions()
-        print(self.portfolio)
 
     def cancel_existing_orders(self):
         orders = self.alpaca.list_orders(status="open")
