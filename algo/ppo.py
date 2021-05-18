@@ -96,11 +96,6 @@ class PPO:
     def _compute_value_loss(self, obs, returns):
         _, values, _, _ = self.acmodel(obs)
         
-
-        
-#         deltas = returns.view(-1,1) - values.view(-1,1)
-#         print (np.max(np.abs(deltas.detach().numpy())))
-#         print (np.max(deltas.detach().numpy()**2))
         value_loss = torch.mean((returns.view(-1,1) - values.view(-1,1))**2)
 
         return value_loss

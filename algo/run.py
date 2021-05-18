@@ -16,6 +16,7 @@ from torch.autograd import Variable
 from tqdm import tqdm
 from copy import deepcopy
 from gym.envs.registration import registry, register
+from pathlib import Path
 
 # tbh i didn't want to figure out package stuff so uh.. this is the hacky way to get around that heh..
 #thanks stackoverflow
@@ -50,6 +51,10 @@ def run_experiment(acmodel, env, ppo_kwargs, rollout_kwargs = {}, max_episodes=2
     rollouts = RolloutBuffer(acmodel, env, **rollout_kwargs)
     ppo = PPO(acmodel, **ppo_kwargs)
 
+    # # some variables for bookkeeping purposes
+    lr = ppo_kwargs['lr']
+    checkpoint_path = f'./checkpoints/acmodel_{config.EPISODE_LENGTH}ep_{config.NUM_PAST_STATES}s_rnn{acmodel.recurrent}_{acmodel.num_layers}lay_{acmodel.hidden_size}hid_{lr}lr'
+
     pbar = tqdm(range(max_episodes))
     for update in pbar:
         rollouts.reset() # resetting the buffer
@@ -73,12 +78,21 @@ def run_experiment(acmodel, env, ppo_kwargs, rollout_kwargs = {}, max_episodes=2
             is_solved = True
             break
 
+        # save results every 500
+        if update % 500 == 0:
+            Path(checkpoint_path).mkdir(parents=True, exist_ok=True)
+            torch.save(acmodel.state_dict(), f'{checkpoint_path}/{update}')
+
     if is_solved:
         print('Solved!')
     else:
         print('Unsolved. Check your implementation.')
     
-    return pd.DataFrame(pd_logs).set_index('episode')
+    logs = pd.DataFrame(pd_logs).set_index('episode')
+
+    logs.to_pickle(f'{checkpoint_path}/logs')
+
+    return logs
 
 def parse_args(argv):
     parser = argparse.ArgumentParser()
@@ -92,6 +106,8 @@ def parse_args(argv):
     parser.add_argument('-lr', '--lr', type=float)
     parser.add_argument('-ti', '--train-iters', type=int)
 
+    parser.add_argument('-ep', '--episode-length', type=int)
+
     args = parser.parse_args()
     args_namespace = vars(args)
 
@@ -99,6 +115,9 @@ def parse_args(argv):
 
     acmodel_kwargs = {k: args_namespace[k] for k in ['num_tickers', 'time_horizon', 'num_ta_indicators', 'recurrent', 'hidden_size', 'num_layers']}
     ppo_kwargs = {k: args_namespace[k] for k in ['lr', 'train_iters']}
+
+    config.EPISODE_LENGTH = args.episode_length
+    config.NUM_PAST_STATES = args.time_horizon
 
     return acmodel_kwargs, ppo_kwargs
 
@@ -113,7 +132,7 @@ if __name__ == '__main__':
     env = TradeEnv(tickers=tickers, data=data, features=['volume'] + config.TECHNICAL_INDICATORS_LIST, 
                    episode_length=config.EPISODE_LENGTH, num_past_states=config.NUM_PAST_STATES)
 
-    rnn_df = run_experiment(acmodel, env, ppo_kwargs, max_episodes=2000, score_threshold=70)
+    df = run_experiment(acmodel, env, ppo_kwargs, max_episodes=10000, score_threshold=float("inf"))
 
 
     # env_name = 'CartpoleWithMemory-v0'
