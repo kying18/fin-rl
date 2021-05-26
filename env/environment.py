@@ -98,7 +98,7 @@ class TradeEnv(gym.Env):
         obs = self.get_obs(pct_changes, self.balance, self.holdings, self.index)
         self.cum_rew += rew
 
-        return obs, rew, done, {}
+        return obs, rew.numpy(), done, {}
     
     
     def get_stock_obs(self, index):        
